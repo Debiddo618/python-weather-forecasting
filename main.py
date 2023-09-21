@@ -1,6 +1,7 @@
 import streamlit
 import streamlit as st
 import plotly.express as px
+from backend import get_data
 
 st.set_page_config(layout="wide")
 st.title("Weather Forecast for the Next Days")
@@ -9,11 +10,19 @@ days = st.slider(min_value=1,max_value=5,label="Forecast Days",help="Select the 
 options = st.selectbox("Select data to view",options=["Temperature","Sky"])
 st.subheader("{} for the next {} days in {}".format(options,days,place))
 
-def get_data(days):
-    dates = ["2022-25-10","2022-22-10","2022-21-10","2022-20-10"]
-    temperatures=[0,3,2,4]
-    temperatures=[days*i for i in temperatures]
-    return dates,temperatures
-d,t = get_data(days)
-figure = px.scatter(x=d,y=t, labels={"x":"Date","y":"Temperatures"})
-st.plotly_chart(figure)
+if place:
+    # Get the temperature/sky data
+    filtered_data = get_data(place,days)
+
+    # Create Temperature plot
+    if options == "Temperature":
+        temperatures = [dict["main"]["temp"] for dict in filtered_data]
+        dates = [dict["dt_txt"] for dict in filtered_data]
+        figure = px.line(x=dates,y=temperatures, labels={"x":"Date","y":"Temperatures"})
+        st.plotly_chart(figure)
+
+    if options == "Sky":
+        sky_conditions = [dict["weather"][0]["main"] for dict in filtered_data]
+        images = {"Clear":"images/clear.png","Clouds":"images/cloud.png","Rain":"images/rain.png","Snow":"images/snow.png"}
+        sky_image = [images[condition] for condition in sky_conditions]
+        st.image(sky_image, width=115)
